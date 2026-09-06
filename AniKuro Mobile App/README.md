@@ -12,14 +12,12 @@
 
 ## ✨ Features
 
-- ⚡ **Official AniList 2-Way Sync**: Instant OAuth implicit grant login with deep link support (`anikuro://auth`). Track episodes, read chapters, update scores, and custom lists in real-time.
+- ⚡ **Official AniList 2-Way Sync**: Instant OAuth implicit grant login with deep link support. Track episodes, read chapters, update scores, and custom lists in real-time.
 - 🧙 **KuroSensei AI Assistant**: Personalized AI recommendation engine based on your personal AniList watching history and genre affinities.
 - 📅 **Weekly Airing Calendar**: Interactive day-by-day anime release schedule countdown with notifications for newly aired episodes.
 - 📊 **Rich User Statistics**: Comprehensive breakdown of hours watched, chapters read, score distributions, and favorite genres.
 - 🎨 **Sleek Mobile UI**: Fluid 60/120 FPS spring physics modal sheets, dark glassmorphism styling, and custom animations.
-- 📱 **Cross-Platform**:
-  - **Android App**: Native Capacitor Android wrapper with background notifications, hardware acceleration, and edge-to-edge system bars.
-  - **Web App**: Self-contained, single-file distribution that can run offline or be deployed to Vercel/Netlify in 1 click.
+- 📱 **Android App**: Native Capacitor Android wrapper with background notifications, hardware acceleration, and edge-to-edge system bars.
 
 ---
 
