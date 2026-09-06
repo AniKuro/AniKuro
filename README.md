@@ -1,5 +1,7 @@
 # 🎌 AniKuro (アニクロ) - Anime & Manga Tracker
 
+> **An Unofficial AniList App.**
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-sky.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/React-19-blue.svg)](https://react.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-38bdf8.svg)](https://tailwindcss.com/)
