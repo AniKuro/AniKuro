@@ -114,10 +114,18 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void handleDeepLinkIntent(Intent intent) {
-        if (intent != null && intent.getData() != null) {
-            String uriString = intent.getData().toString();
-            if (uriString.startsWith("anikuro://") || uriString.contains("access_token=")) {
-                deliverOAuthTokenToWebView(uriString);
+        if (intent != null) {
+            String uriString = intent.getDataString();
+            if (uriString == null && intent.getData() != null) {
+                uriString = intent.getData().toString();
+            }
+            if (uriString != null) {
+                if (intent.getData() != null && intent.getData().getFragment() != null && !uriString.contains("#")) {
+                    uriString = uriString + "#" + intent.getData().getFragment();
+                }
+                if (uriString.startsWith("anikuro://") || uriString.contains("access_token=")) {
+                    deliverOAuthTokenToWebView(uriString);
+                }
             }
         }
     }
@@ -169,113 +177,41 @@ public class MainActivity extends BridgeActivity {
 
         @JavascriptInterface
         public void openOAuthLogin(String oauthUrl) {
+            openChromeCustomTabLogin(oauthUrl);
+        }
+
+        @JavascriptInterface
+        public void openChromeLogin(String oauthUrl) {
+            openChromeCustomTabLogin(oauthUrl);
+        }
+
+        private void openChromeCustomTabLogin(String oauthUrl) {
             runOnUiThread(() -> {
                 try {
-                    Dialog dialog = new Dialog(MainActivity.this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
-                    RelativeLayout layout = new RelativeLayout(MainActivity.this);
-                    layout.setBackgroundColor(Color.parseColor("#070913"));
+                    androidx.browser.customtabs.CustomTabsIntent customTabsIntent = new androidx.browser.customtabs.CustomTabsIntent.Builder()
+                        .setShowTitle(true)
+                        .setColorScheme(androidx.browser.customtabs.CustomTabsIntent.COLOR_SCHEME_DARK)
+                        .setDefaultColorSchemeParams(new androidx.browser.customtabs.CustomTabColorSchemeParams.Builder()
+                            .setToolbarColor(Color.parseColor("#090d16"))
+                            .build())
+                        .build();
 
-                    // Header bar with Close button and title
-                    RelativeLayout header = new RelativeLayout(MainActivity.this);
-                    header.setId(View.generateViewId());
-                    header.setBackgroundColor(Color.parseColor("#0d111d"));
-                    int p = (int) (14 * getResources().getDisplayMetrics().density);
-                    header.setPadding(p, p, p, p);
+                    try {
+                        PackageManager pm = getPackageManager();
+                        pm.getPackageInfo("com.android.chrome", 0);
+                        customTabsIntent.intent.setPackage("com.android.chrome");
+                    } catch (Exception ignored) {}
 
-                    TextView title = new TextView(MainActivity.this);
-                    title.setText("AniList Authorization (AniKuro)");
-                    title.setTextColor(Color.WHITE);
-                    title.setTextSize(15);
-                    title.setTypeface(Typeface.DEFAULT_BOLD);
-                    RelativeLayout.LayoutParams titleParams = new RelativeLayout.LayoutParams(
-                        RelativeLayout.LayoutParams.WRAP_CONTENT,
-                        RelativeLayout.LayoutParams.WRAP_CONTENT
-                    );
-                    titleParams.addRule(RelativeLayout.CENTER_VERTICAL);
-                    header.addView(title, titleParams);
-
-                    Button closeBtn = new Button(MainActivity.this);
-                    closeBtn.setText("✕ Cancel");
-                    closeBtn.setTextColor(Color.parseColor("#94a3b8"));
-                    closeBtn.setBackgroundColor(Color.TRANSPARENT);
-                    closeBtn.setTextSize(13);
-                    RelativeLayout.LayoutParams btnParams = new RelativeLayout.LayoutParams(
-                        RelativeLayout.LayoutParams.WRAP_CONTENT,
-                        RelativeLayout.LayoutParams.WRAP_CONTENT
-                    );
-                    btnParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-                    btnParams.addRule(RelativeLayout.CENTER_VERTICAL);
-                    closeBtn.setOnClickListener(v -> dialog.dismiss());
-                    header.addView(closeBtn, btnParams);
-
-                    RelativeLayout.LayoutParams headerParams = new RelativeLayout.LayoutParams(
-                        RelativeLayout.LayoutParams.MATCH_PARENT,
-                        RelativeLayout.LayoutParams.WRAP_CONTENT
-                    );
-                    headerParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-                    layout.addView(header, headerParams);
-
-                    // Dedicated auth WebView
-                    WebView authWebView = new WebView(MainActivity.this);
-                    WebSettings ws = authWebView.getSettings();
-                    ws.setJavaScriptEnabled(true);
-                    ws.setDomStorageEnabled(true);
-                    ws.setDatabaseEnabled(true);
-
-                    authWebView.setWebViewClient(new WebViewClient() {
-                        private boolean tokenHandled = false;
-
-                        private boolean checkUrl(String url) {
-                            if (url == null || tokenHandled) return false;
-                            if (url.contains("access_token=") || url.startsWith("anikuro://")) {
-                                tokenHandled = true;
-                                deliverOAuthTokenToWebView(url);
-                                dialog.dismiss();
-                                return true;
-                            }
-                            return false;
-                        }
-
-                        @Override
-                        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                            if (request != null && request.getUrl() != null) {
-                                if (checkUrl(request.getUrl().toString())) {
-                                    return true;
-                                }
-                            }
-                            return super.shouldOverrideUrlLoading(view, request);
-                        }
-
-                        @Override
-                        public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                            if (checkUrl(url)) {
-                                return true;
-                            }
-                            return super.shouldOverrideUrlLoading(view, url);
-                        }
-
-                        @Override
-                        public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                            checkUrl(url);
-                            super.onPageStarted(view, url, favicon);
-                        }
-                    });
-
-                    RelativeLayout.LayoutParams webParams = new RelativeLayout.LayoutParams(
-                        RelativeLayout.LayoutParams.MATCH_PARENT,
-                        RelativeLayout.LayoutParams.MATCH_PARENT
-                    );
-                    webParams.addRule(RelativeLayout.BELOW, header.getId());
-                    layout.addView(authWebView, webParams);
-
-                    dialog.setContentView(layout);
-                    dialog.show();
-
-                    authWebView.loadUrl(oauthUrl);
+                    customTabsIntent.intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    customTabsIntent.launchUrl(MainActivity.this, Uri.parse(oauthUrl));
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(oauthUrl));
-                    startActivity(browserIntent);
+                    try {
+                        Intent fallbackIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(oauthUrl));
+                        fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(fallbackIntent);
+                    } catch (Exception fallbackErr) {
+                        fallbackErr.printStackTrace();
+                    }
                 }
             });
         }
@@ -311,14 +247,24 @@ public class MainActivity extends BridgeActivity {
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                 );
 
+                android.graphics.Bitmap largeIcon = null;
+                try {
+                    largeIcon = android.graphics.BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher);
+                } catch (Exception ignored) {}
+
                 NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setSmallIcon(R.drawable.ic_notification)
                     .setContentTitle(title)
                     .setContentText(body)
                     .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                    .setColor(Color.parseColor("#38bdf8"))
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setAutoCancel(true)
                     .setContentIntent(pendingIntent);
+
+                if (largeIcon != null) {
+                    builder.setLargeIcon(largeIcon);
+                }
 
                 NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
                 if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
